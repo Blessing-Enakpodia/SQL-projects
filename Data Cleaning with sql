@@ -2,8 +2,6 @@
 
 / # Skills Demonstrated - A comprehensive grasp and adept application of intermediate SQL statements, including Window functions, Common Table Expressions (CTEs), CASE WHEN clauses, Aggregate Functions and Converting Data types, essential for proficient data manipulation and analysis./
 
-
-
 -- Create table to import dataset
 
 CREATE TABLE mealsurvey
