@@ -1,4 +1,5 @@
 -- Provide the name of the sales_rep in each region with the largest amount of total_amt_usd sales.
+
 WITH t1 AS (
        SELECT s.name sales_rep_name, 
        r.name region, 
@@ -113,3 +114,43 @@ t2 AS (
   GROUP BY 1 
   HAVING AVG(o.total_amt_usd) > (SELECT * FROM t1))
 SELECT ROUND(AVG(avg_amt),2) FROM t2;
+
+-- Show the number of companies that begin with letters and those that begin with numbers. 
+
+WITH t1 AS (
+  SELECT name, CASE WHEN LEFT(UPPER(name), 1) IN ('0','1','2','3','4','5','6','7','8','9') 
+                          THEN 1 ELSE 0 END AS num, 
+            CASE WHEN LEFT(UPPER(name), 1) IN ('0','1','2','3','4','5','6','7','8','9') 
+                          THEN 0 ELSE 1 END AS letter
+         FROM accounts) 
+SELECT SUM(num) nums, SUM(letter) letters
+FROM t1;
+
+-- Create an email address for employees using their first_name, '.', last name, @ company name .com
+WITH t1 AS (
+    SELECT LEFT(primary_poc,     STRPOS(primary_poc, ' ') -1 ) first_name,  
+           RIGHT(primary_poc, LENGTH(primary_poc) - STRPOS(primary_poc, ' ')) last_name,
+           name
+   FROM accounts)
+SELECT first_name, 
+       last_name, 
+       CONCAT(first_name, '.', last_name, '@', REPLACE(name, ' ', ''), '.com') --remove the space inbetween company names that are two or more words
+FROM t1;
+
+-- Create a password for the email addresses
+
+WITH t1 AS (
+    SELECT LEFT(primary_poc,     STRPOS(primary_poc, ' ') -1 ) first_name, 
+           RIGHT(primary_poc, LENGTH(primary_poc) - STRPOS(primary_poc, ' ')) last_name, name
+    FROM accounts)
+SELECT first_name, 
+       last_name,
+       CONCAT(first_name, '.', last_name, '@', name, '.com') email_address, 
+       LEFT(LOWER(first_name), 1) || 
+       RIGHT(LOWER(first_name), 1) || 
+       LEFT(LOWER(last_name), 1) || 
+       RIGHT(LOWER(last_name), 1) || 
+       LENGTH(first_name) || 
+       LENGTH(last_name) || 
+       REPLACE(UPPER(name), ' ', '') password
+FROM t1;
