@@ -1,0 +1,133 @@
+/ Data Cleaning with SQL /
+
+/ # Skills Demonstrated - A comprehensive grasp and adept application of intermediate SQL statements, including Window functions, Common Table Expressions (CTEs), CASE WHEN clauses, Aggregate Functions and Converting Data types, essential for proficient data manipulation and analysis./
+
+
+
+-- Create table to import dataset
+
+CREATE TABLE mealsurvey
+	(OrderId varchar,
+	FirstName varchar,
+	LastName varchar,
+	Gender varchar,
+	PhoneNumber varchar,
+	Address varchar,
+	Age varchar,
+	LunchOrder varchar,
+	ItemsOrdered varchar,
+	MealRating varchar,
+	MealCostEstimated varchar);
+
+-- Explore dataset
+
+SELECT * FROM mealsurvey;
+
+-- Check for duplicates by orderid
+
+SELECT orderid,
+		COUNT(*) num
+FROM mealsurvey
+GROUP BY orderid
+HAVING COUNT(*) > 1
+
+-- Check the details of orderid 568 to ensure it is duplicate entries
+
+SELECT * FROM mealsurvey
+WHERE orderid = '568';
+
+--Assign new orderid to one of the entries as they are both different people
+
+UPDATE mealsurvey
+SET orderid = '887'
+WHERE orderid = '568' AND firstname = 'Carl';
+
+--Check for duplicates by firstname, lastname, address
+
+WITH t1 AS(
+	 SELECT *,
+	 ROW_NUMBER() OVER (
+	 PARTITION BY firstname, lastname, address, age
+	 ORDER BY orderid) row_num
+FROM mealsurvey)
+SELECT *
+FROM t1
+WHERE row_num >= '2';
+
+2 people filled the survey twice so, one of each entries will be deleted for analysis accuracy.
+
+--Delete either of the 2 entries by same people
+
+DELETE FROM mealsurvey
+WHERE orderid IN ('765', '188');
+
+--Standardise the name format. Make All names start with Uppercase
+
+UPDATE mealsurvey
+SET firstname =
+CONCAT(UPPER(SUBSTRING(firstname, 1,1)), LOWER(SUBSTRING(firstname, 2)));
+
+UPDATE mealsurvey
+SET lastname =
+CONCAT(UPPER(SUBSTRING(lastname, 1,1)), LOWER(SUBSTRING(lastname, 2)));
+
+--Standardise the gender column
+
+Update mealsurvey
+SET gender = 
+	CASE WHEN gender ILIKE 'f%' THEN 'Female' 
+		 WHEN gender ILIKE 'm%' THEN 'Male'
+	ELSE 'Unknown'
+	END;
+
+--Standardise the phone number column
+
+--First, remove all the non-numeric values in the column
+UPDATE mealsurvey
+SET phonenumber = REGEXP_REPLACE(phonenumber, '[^0-9]', '');
+
+-- Replace anomalies in phone number column with null string
+
+UPDATE mealsurvey
+SET phonenumber = 
+	CASE WHEN phonenumber IN ('--') THEN ''
+	ELSE phonenumber
+	END;
+
+--Then, standardise the format for the column
+
+UPDATE mealsurvey
+SET phonenumber = CONCAT(
+	LEFT(phonenumber,3), 
+    '-',
+	SUBSTRING(phonenumber FROM 4 FOR 3),
+	'-',
+	RIGHT(phonenumber, 4));
+
+-- Replace anomalies in age column
+
+UPDATE mealsurvey
+SET age = 
+	CASE WHEN age = '350' THEN ''
+	ELSE replace(age, ']', '')
+	END;
+	
+--Replace anomalies in mealrating column
+
+UPDATE mealsurvey
+SET mealrating =
+	CASE WHEN mealrating = 'n/a' THEN null 
+		 WHEN CAST(mealrating as decimal) > 5 THEN 5
+	ELSE CAST(mealrating as decimal)
+	END;
+	
+--Replace anomalies in mealcost estimated  column
+
+UPDATE mealsurvey
+SET mealcostestimated =
+	CASE WHEN mealcostestimated IN ('n/a', '0', '$1,000') THEN ''
+	ELSE REPLACE(mealcostestimated, '$', '')
+	END;
+
+
+	
