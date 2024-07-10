@@ -1,0 +1,132 @@
+/Data exploration on postgreSQL/
+
+-- What is the name of the customer who made the highest total payments?
+SELECT c.name,
+       SUM(amount) total_amount
+FROM customer_list c
+LEFT JOIN payment p
+  ON c.id= p.customer_id
+GROUP BY c.name
+ORDER BY total_amount DESC
+LIMIT 1;
+
+--What movie was rented the most?
+SELECT title, COUNT(DISTINCT rental_id) total_rental
+FROM rented_movies
+GROUP BY title
+ORDER BY total_rental DESC
+LIMIT 1;
+
+-- What movies have been rented so far?
+SELECT DISTINCT(title)
+FROM rented_movies
+ORDER BY title;
+
+--Which customers have not rented any movies so far?
+SELECT first_name, last_name
+FROM customer
+WHERE customer_id NOT IN
+	(SELECT customer_id
+	 FROM rental);
+	 
+-- Display each movie and the number of times it got rented.
+SELECT title, COUNT(rental_id) total_rental
+FROM rented_movies
+GROUP BY title
+ORDER BY total_rental DESC;
+
+-- Show the first and last name, and the number of films each actor acted in.
+SELECT a.first_name, a.last_name, COUNT(film_id) total_films
+FROM actor a
+LEFT JOIN film_actor f
+USING(actor_id)
+GROUP BY a.first_name, a.last_name
+ORDER BY total_films DESC;
+
+-- Display the names of the actors that have acted in more than 20 movies.
+SELECT 
+	CONCAT(a.first_name, ' ', a.last_name), COUNT(film_id) total_films
+FROM actor a
+LEFT JOIN film_actor f
+USING(actor_id)
+GROUP BY a.first_name, a.last_name
+HAVING COUNT(film_id) >20
+ORDER BY total_films DESC;
+
+-- Display all the movies rated "PG" and the number of times they were rented.
+SELECT f.title, COUNT(rental_id) total_rental
+FROM film f
+LEFT JOIN rented_movies
+USING(film_id)
+WHERE f.rating = 'PG'
+GROUP BY f.title
+ORDER BY total_rental DESC;
+
+-- Display movies offered for rent in store_id 1 but not offered for rent in store_id 2.
+SELECT DISTINCT f.title
+FROM film f
+LEFT JOIN inventory
+USING (film_id)
+WHERE store_id = 1
+AND film_id NOT IN
+	(SELECT DISTINCT film_id
+	FROM inventory
+	WHERE store_id = 2)
+ORDER BY f.title;
+
+-- Display the movies offered for rent in any of the two stores.
+SELECT DISTINCT f.title
+FROM film f
+LEFT JOIN inventory
+USING (film_id)
+WHERE store_id IN (1,2)
+ORDER BY title;
+
+-- Display the movies offered in both stores at the same time.
+SELECT title
+FROM film
+WHERE film_id IN
+	(SELECT film_id
+	 FROM inventory
+	 WHERE store_id = 1)
+AND film_id IN
+	(SELECT film_id
+	 FROM inventory
+	 WHERE store_id = 2)
+ORDER BY title;
+
+-- Display the movie title of the most rented movie in store_id 1.
+SELECT f.title, COUNT(r.rental_id) total_rental
+FROM film f
+LEFT JOIN inventory i
+USING (film_id)
+LEFT JOIN rental r
+USING (inventory_id)
+WHERE store_id = 1
+GROUP BY f.title
+ORDER BY total_rental DESC
+LIMIT 1;
+
+-- How many movies are not offered for rent in the stores yet?
+SELECT COUNT(title) total_count
+FROM film
+WHERE film_id NOT IN
+	(SELECT film_id 
+	 FROM inventory);
+	 
+-- Display the number of rented movies under each rating.
+SELECT f.rating, COUNT(r.rental_id) total_rental
+FROM film f
+LEFT JOIN rented_movies r
+USING (film_id)
+GROUP BY f.rating
+ORDER BY total_rental DESC;
+
+-- Display the profit of each of the stores
+SELECT i.store_id, SUM(amount) total_profit
+FROM payment p
+LEFT JOIN rental r
+USING(rental_id)
+LEFT JOIN inventory i
+USING (inventory_id)
+GROUP BY i.store_id;
