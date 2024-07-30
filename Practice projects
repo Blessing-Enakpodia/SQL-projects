@@ -1,4 +1,4 @@
-A collection of SQL practice questions and answers from DataLemur. Demonstrateted understanding of aggregations, windows functions, ctes, joins, filtering, sorting, date functions, 
+A collection of SQL practice questions and answers from DataLemur. Demonstrateted understanding of aggregations, windows functions, ctes, joins, filtering, Case statements, sorting and date functions.
 
 -- Write a query to find the top 5 artists whose songs appear most frequently in the Top 10 of the global_song_rank table. Display the top 5 artist names in ascending order, along with their song appearance ranking.
 
