@@ -1,0 +1,102 @@
+A collection of SQL practice questions and answers from DataLemur. Demonstrateted understanding of aggregations, windows functions, ctes, joins, filtering, sorting, date functions, 
+
+-- Write a query to find the top 5 artists whose songs appear most frequently in the Top 10 of the global_song_rank table. Display the top 5 artist names in ascending order, along with their song appearance ranking.
+
+WITH top10_cte AS (
+ SELECT artist_name,
+  DENSE_RANK()
+   OVER(ORDER BY COUNT(song_id) DESC) artist_rank
+FROM artists a  
+JOIN songs s 
+ USING(artist_id)
+JOIN global_song_rank g
+ USING(song_id)
+WHERE rank <= 10
+GROUP BY artist_name
+)
+SELECT artist_name, artist_rank
+FROM top10_cte
+WHERE artist_rank <= 5;
+
+-- Write a query to display the top 3 highest earners in each department. Return the employees name, department and salaries. In case of duplicates, sort the results of department name in ascending order, then by salary in descending order. If multiple employees have the same salary, then order them alphabetically.
+
+WITH top3_cte AS (
+  SELECT e.name, 
+         d.department_name,
+         e.salary,
+      DENSE_RANK() OVER(PARTITION BY department_name ORDER BY e.salary DESC) rank
+       FROM employee e
+JOIN department d
+USING(department_id)
+)
+SELECT name, department_name, salary
+FROM top3_cte
+WHERE rank <= 3;
+
+-- Write a query to determine the second highest salary among all empoyees.
+
+SELECT salary
+FROM employee
+ORDER BY salary DESC
+OFFSET 1
+LIMIT 1;
+
+-- Assume you're given a table containing data on Amazon customers and their spending on products in different category, write a query to identify the top two highest-grossing products within each category in the year 2022. The output should include the category, product, and total spend.
+
+WITH rankedspending_cte AS (
+  SELECT
+    category,
+    product,
+    SUM(spend) AS total_spend,
+    RANK() OVER(
+    PARTITION BY category
+    ORDER BY SUM(spend) DESC) AS ranking
+  FROM product_spend
+  WHERE EXTRACT(YEAR FROM transaction_date) = 2022
+  GROUP BY 1,2
+)
+SELECT
+  category,
+  product,
+  total_spend
+FROM rankedspending_cte
+WHERE ranking < 3
+ORDER BY category, ranking;
+
+-- Assume you're given a table Twitter tweet data, write a query to obtain a histogram of tweets posted per user in 2022. Output the tweet count per user as the bucket and the number of Twitter users who fall into that bucket.
+
+WITH total_tweets AS (
+  SELECT 
+    user_id, 
+    COUNT(tweet_id) AS tweet_count_per_user
+  FROM tweets 
+  WHERE tweet_date BETWEEN '2022-01-01' 
+    AND '2022-12-31' 
+  GROUP BY user_id
+)   
+SELECT 
+  tweet_count_per_user AS tweet_bucket, 
+  COUNT(user_id) AS users_num 
+FROM total_tweets 
+GROUP BY tweet_count_per_user;
+
+-- Write a query to return the IDs of the Facebook pages that have zero likes. The output should be sorted in ascending order based on the page IDs.
+
+SELECT p.page_id
+FROM pages p
+LEFT JOIN page_likes pl
+  USING(page_id)
+WHERE pl.page_id IS NULL
+ORDER BY page_id;
+
+-- Write a query to calculate the click-through rate (CTR) for the app in 2022 and round the results to 2 decimal places.
+
+SELECT
+  app_id,
+  ROUND(100.0 *
+    SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) /
+    SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END), 2)  AS ctr_rate
+FROM events
+WHERE timestamp >= '2022-01-01' 
+  AND timestamp < '2023-01-01'
+GROUP BY app_id;
